@@ -1,11 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-# %% Plot radioactivity from SNF based on values in ../../Results/HTGR_FCM/reactor_simulation/summary/
+# %% Plot radioactivity from SNF based on values in ../../Results/HTGR_FCM/reactor_simulation/
 
 activity_directory_path = "../../Results/HTGR_FCM/reactor_simulation/"
+output_path = "../output/"
 
-
+# The below functions only need to exist because the data output format is ... non-standard.
 def read_horizontal_data(filename):
     """
     Reads horizontally oriented data where each row represents a different measurement
@@ -96,6 +97,11 @@ for i, isotope in enumerate(isotopes):
         if len(valid_days) > 0 and len(valid_activities) > 0:
             plt.plot(valid_days, valid_activities, label=isotope, linewidth=1)
 
+
+# TODO: Maybe we should limit the plotting or legend to only the most prominent nuclides.
+#  The question is open ended enough that it makes sense to include only the top contributors.
+#  It may also make sense to split the plot into one of each for before and after shutdown.
+
 # Customize the plot
 plt.xlabel('Time (days)')
 plt.ylabel('Activity')
@@ -111,11 +117,13 @@ plt.tight_layout()
 
 # Make the output directory if it does not exist
 import os
-output_dir = "../output/"
-os.makedirs(output_dir, exist_ok=True)
+os.makedirs(output_path, exist_ok=True)
 
 # Save the plot
-plt.savefig(output_dir + 'activity_plot.png', bbox_inches='tight', dpi=500)
+plt.savefig(output_path + 'activity_plot.png', bbox_inches='tight', dpi=500)
 plt.close()
 
 # %% Plot fissile concentrations by nuclide.
+
+# TODO: This will be essentially the same as the previous plot, but with different data for concentrations.
+#  The same parsing functions can be used.
