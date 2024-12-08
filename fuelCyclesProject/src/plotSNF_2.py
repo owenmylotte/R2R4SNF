@@ -65,15 +65,22 @@ def get_top_contributors(days, activities, isotopes, start_idx, end_idx, n_top=1
 def create_activity_plots(days, activities, isotopes, split_timestep, output_prefix, reactor_name,
                           early_ylim=None, late_ylim=None):
     """
-    Creates early and late time plots for a given reactor's data
-
-    Parameters:
-    -----------
-    early_ylim : tuple, optional
-        (ymin, ymax) for early-time plot
-    late_ylim : tuple, optional
-        (ymin, ymax) for late-time plot
+    Creates early and late time plots for a given reactor's data with updated styling and larger fonts
     """
+    # Set the style to match the slide
+    plt.style.use('default')
+
+    # Custom styling
+    background_color = '#d0cccc'
+    grid_color = '#FFFFFF'
+    text_color = '#333333'
+
+    # Font sizes
+    TITLE_SIZE = 16
+    LABEL_SIZE = 14
+    TICK_SIZE = 12
+    LEGEND_SIZE = 12
+
     # Find index corresponding to split_timestep
     split_index = np.searchsorted(days, split_timestep)
 
@@ -84,52 +91,95 @@ def create_activity_plots(days, activities, isotopes, split_timestep, output_pre
     # Calculate total activity at each time point
     total_activity = np.nansum(activities, axis=0)
 
+    def style_plot(fig, ax):
+        ax.set_facecolor(background_color)
+        fig.patch.set_facecolor(background_color)
+
+        # Grid styling
+        ax.grid(True, which="both", ls="-", alpha=0.2, color=grid_color)
+        ax.set_axisbelow(True)
+
+        # Border styling
+        for spine in ax.spines.values():
+            spine.set_color('#CCCCCC')
+
+        # Tick styling
+        ax.tick_params(colors=text_color, labelsize=TICK_SIZE)
+
+        # Label styling
+        ax.xaxis.label.set_color(text_color)
+        ax.yaxis.label.set_color(text_color)
+        ax.xaxis.label.set_size(LABEL_SIZE)
+        ax.yaxis.label.set_size(LABEL_SIZE)
+
     # Create early-time plot
-    plt.figure(figsize=(12, 8))
-    for idx in top_early:
+    fig, ax = plt.subplots(figsize=(12, 10))
+
+    # Plot lines
+    for idx in top_late:
         isotope_activities = activities[idx, :split_index]
         valid_indices = ~np.isnan(isotope_activities)
         if np.any(valid_indices):
-            plt.plot(days[:split_index], isotope_activities, label=isotopes[idx], linewidth=1)
+            ax.plot(days[:split_index], isotope_activities, label=isotopes[idx], linewidth=1.5)
 
-    plt.plot(days[:split_index], total_activity[:split_index],
-             label='Total Activity', linewidth=2, color='black', linestyle='--')
+    # Plot total activity with black dashed line
+    ax.plot(days[:split_index], total_activity[:split_index],
+            label='Total Activity', linewidth=2.5, color='black', linestyle='--')
 
-    plt.xlabel('Time (days)')
-    plt.ylabel('Activity')
-    plt.title(f'{reactor_name} In Core Activity\nTop 10 Time Integrated Contributors')
-    plt.grid(True, which="both", ls="-", alpha=0.2)
-    plt.xscale('log')
-    plt.yscale('log')
+    ax.set_xlabel('Time (days)', fontsize=LABEL_SIZE)
+    ax.set_ylabel('Activity', fontsize=LABEL_SIZE)
+    ax.set_title(f'{reactor_name} In Core Activity\nTop 10 Time Integrated Contributors',
+                 color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
+
+    ax.set_xscale('log')
+    ax.set_yscale('log')
     if early_ylim:
-        plt.ylim(early_ylim)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize='small')
+        ax.set_ylim(early_ylim)
+
+    style_plot(fig, ax)
+
+    # Legend styling
+    leg = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left',
+                    borderaxespad=0., fontsize=LEGEND_SIZE, framealpha=1)
+    leg.get_frame().set_facecolor(background_color)
+
     plt.tight_layout()
-    plt.savefig(f'{output_prefix}_early.png', bbox_inches='tight', dpi=500)
+    plt.savefig(f'{output_prefix}_early.png', bbox_inches='tight', dpi=500,
+                facecolor=background_color, edgecolor='none')
     plt.close()
 
     # Create late-time plot
-    plt.figure(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(12, 10))
+
     for idx in top_late:
         isotope_activities = activities[idx, split_index:]
         valid_indices = ~np.isnan(isotope_activities)
         if np.any(valid_indices):
-            plt.plot(days[split_index:], isotope_activities, label=isotopes[idx], linewidth=1)
+            ax.plot(days[split_index:], isotope_activities, label=isotopes[idx], linewidth=1.5)
 
-    plt.plot(days[split_index:], total_activity[split_index:],
-             label='Total Activity', linewidth=2, color='black', linestyle='--')
+    ax.plot(days[split_index:], total_activity[split_index:],
+            label='Total Activity', linewidth=2.5, color='black', linestyle='--')
 
-    plt.xlabel('Time (days)')
-    plt.ylabel('Activity')
-    plt.title(f'{reactor_name} Spent Fuel Activity\nTop 10 Time Integrated Contributors')
-    plt.grid(True, which="both", ls="-", alpha=0.2)
-    plt.xscale('log')
-    plt.yscale('log')
+    ax.set_xlabel('Time (days)', fontsize=LABEL_SIZE)
+    ax.set_ylabel('Activity', fontsize=LABEL_SIZE)
+    ax.set_title(f'{reactor_name} Spent Fuel Activity\nTop 10 Time Integrated Contributors',
+                 color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
+
+    ax.set_xscale('log')
+    ax.set_yscale('log')
     if late_ylim:
-        plt.ylim(late_ylim)
-    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize='small')
+        ax.set_ylim(late_ylim)
+
+    style_plot(fig, ax)
+
+    # Legend styling
+    leg = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left',
+                    borderaxespad=0., fontsize=LEGEND_SIZE, framealpha=1)
+    leg.get_frame().set_facecolor(background_color)
+
     plt.tight_layout()
-    plt.savefig(f'{output_prefix}_late.png', bbox_inches='tight', dpi=500)
+    plt.savefig(f'{output_prefix}_late.png', bbox_inches='tight', dpi=500,
+                facecolor=background_color, edgecolor='none')
     plt.close()
 
 
