@@ -1,129 +1,169 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import integrate
+import os
 
-# %% Plot radioactivity from SNF based on values in ../../Results/HTGR_FCM/reactor_simulation/
 
-activity_directory_path = "../../Results/HTGR_FCM/reactor_simulation/"
-output_path = "../output/"
-
-# The below functions only need to exist because the data output format is ... non-standard.
 def read_horizontal_data(filename):
     """
     Reads horizontally oriented data where each row represents a different measurement
     and columns are different parameters.
-
-    Returns:
-    - header: list of column names
-    - days: numpy array of days
-    - data: numpy array of data values
     """
     with open(filename, 'r') as f:
-        # Read header line
         header = f.readline().strip().split(',')
-
-        # Read the rest into a list of lists
         data_rows = []
         for line in f:
-            # Convert all values to float
             try:
                 row = [float(val) for val in line.strip().split(',')]
                 data_rows.append(row)
             except ValueError:
                 continue
-
-        # Convert to numpy array
         data = np.array(data_rows)
-
-        # Extract days column (first column)
         days = data[:, 0]
-
     return header, days, data
+
 
 def read_vertical_data(filename):
     """
     Reads vertically oriented data where first column contains labels
     and subsequent columns contain time series data.
-
-    Returns:
-    - time_points: list of column headers (time points)
-    - isotopes: list of isotope names
-    - activities: numpy array of activity values
     """
     with open(filename, 'r') as f:
-        # Read header line for time points
         time_points = f.readline().strip().split(',')
-
-        # Initialize lists for isotopes and data
         isotopes = []
         data_rows = []
-
-        # Read each line
         for line in f:
             values = line.strip().split(',')
             isotope = values[0]
-
-            # Convert remaining values to float where possible
             try:
                 row_data = [float(val) if val.strip() else np.nan for val in values[1:]]
                 isotopes.append(isotope)
                 data_rows.append(row_data)
             except ValueError:
                 continue
-
-        # Convert to numpy array
         activities = np.array(data_rows)
-
     return time_points, isotopes, activities
 
 
-# Read the data
-days_header, days, days_data = read_horizontal_data(activity_directory_path + 'summary/out_HTGR_FCM_time_dep.csv')
-time_points, isotopes, activities = read_vertical_data(activity_directory_path + 'SNF_by_nuclide/radioactivity/HTGR_FCM_activity.csv')
+def get_top_contributors(days, activities, isotopes, start_idx, end_idx, n_top=10):
+    """
+    Calculate time-integrated activities using scipy integrator and return top contributors
+    """
+    integrated_activities = np.zeros(len(isotopes))
 
-# Create figure and axis
-plt.figure(figsize=(12, 8))
+    for i, isotope_activities in enumerate(activities):
+        valid_activities = isotope_activities[start_idx:end_idx]
+        valid_days = days[start_idx:end_idx]
 
-# Plot each isotope's activity over time
-for i, isotope in enumerate(isotopes):
-    # Get activities for this isotope
-    isotope_activities = activities[i, :]
+        if not np.any(np.isnan(valid_activities)):
+            integrated_activities[i] = integrate.simps(valid_activities, valid_days)
 
-    # Only plot if we have valid numerical data
-    valid_indices = ~np.isnan(isotope_activities)
-    if np.any(valid_indices):
-        valid_days = days[:np.sum(valid_indices)]
-        valid_activities = isotope_activities[valid_indices]
-
-        if len(valid_days) > 0 and len(valid_activities) > 0:
-            plt.plot(valid_days, valid_activities, label=isotope, linewidth=1)
+    top_indices = np.argsort(integrated_activities)[-n_top:]
+    return top_indices[::-1]
 
 
-# TODO: Maybe we should limit the plotting or legend to only the most prominent nuclides.
-#  The question is open ended enough that it makes sense to include only the top contributors.
-#  It may also make sense to split the plot into one of each for before and after shutdown.
+def create_activity_plots(days, activities, isotopes, split_timestep, output_prefix, reactor_name,
+                          early_ylim=None, late_ylim=None):
+    """
+    Creates early and late time plots for a given reactor's data
 
-# Customize the plot
-plt.xlabel('Time (days)')
-plt.ylabel('Activity')
-plt.title('Nuclear Activity Over Time for Different Isotopes')
-plt.grid(True, which="both", ls="-", alpha=0.2)
-plt.xscale('log')  # Use log scale for better visualization of wide range of values
+    Parameters:
+    -----------
+    early_ylim : tuple, optional
+        (ymin, ymax) for early-time plot
+    late_ylim : tuple, optional
+        (ymin, ymax) for late-time plot
+    """
+    # Find index corresponding to split_timestep
+    split_index = np.searchsorted(days, split_timestep)
 
-# Adjust legend
-plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize='small')
+    # Get top contributors for each period
+    top_early = get_top_contributors(days, activities, isotopes, 0, split_index)
+    top_late = get_top_contributors(days, activities, isotopes, split_index, len(days))
 
-# Adjust layout to prevent legend cutoff
-plt.tight_layout()
+    # Calculate total activity at each time point
+    total_activity = np.nansum(activities, axis=0)
 
-# Make the output directory if it does not exist
-import os
+    # Create early-time plot
+    plt.figure(figsize=(12, 8))
+    for idx in top_early:
+        isotope_activities = activities[idx, :split_index]
+        valid_indices = ~np.isnan(isotope_activities)
+        if np.any(valid_indices):
+            plt.plot(days[:split_index], isotope_activities, label=isotopes[idx], linewidth=1)
+
+    plt.plot(days[:split_index], total_activity[:split_index],
+             label='Total Activity', linewidth=2, color='black', linestyle='--')
+
+    plt.xlabel('Time (days)')
+    plt.ylabel('Activity')
+    plt.title(f'{reactor_name} In Core Activity\nTop 10 Time Integrated Contributors')
+    plt.grid(True, which="both", ls="-", alpha=0.2)
+    plt.xscale('log')
+    plt.yscale('log')
+    if early_ylim:
+        plt.ylim(early_ylim)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize='small')
+    plt.tight_layout()
+    plt.savefig(f'{output_prefix}_early.png', bbox_inches='tight', dpi=500)
+    plt.close()
+
+    # Create late-time plot
+    plt.figure(figsize=(12, 8))
+    for idx in top_late:
+        isotope_activities = activities[idx, split_index:]
+        valid_indices = ~np.isnan(isotope_activities)
+        if np.any(valid_indices):
+            plt.plot(days[split_index:], isotope_activities, label=isotopes[idx], linewidth=1)
+
+    plt.plot(days[split_index:], total_activity[split_index:],
+             label='Total Activity', linewidth=2, color='black', linestyle='--')
+
+    plt.xlabel('Time (days)')
+    plt.ylabel('Activity')
+    plt.title(f'{reactor_name} Spent Fuel Activity\nTop 10 Time Integrated Contributors')
+    plt.grid(True, which="both", ls="-", alpha=0.2)
+    plt.xscale('log')
+    plt.yscale('log')
+    if late_ylim:
+        plt.ylim(late_ylim)
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize='small')
+    plt.tight_layout()
+    plt.savefig(f'{output_prefix}_late.png', bbox_inches='tight', dpi=500)
+    plt.close()
+
+
+# Define paths for both reactor types
+htgr_base_path = "../../Results/HTGR_FCM/reactor_simulation/"
+pwr_base_path = "/home/owen/CLionProjects/R2R4SNF/Results/Ref_PWR/reactor_simulation/"
+output_path = "../output/"
+
+# Create output directory if it doesn't exist
 os.makedirs(output_path, exist_ok=True)
 
-# Save the plot
-plt.savefig(output_path + 'activity_plot.png', bbox_inches='tight', dpi=500)
-plt.close()
+# Process HTGR FCM data
+htgr_days_header, htgr_days, htgr_days_data = read_horizontal_data(htgr_base_path + 'summary/out_HTGR_FCM_time_dep.csv')
+htgr_time_points, htgr_isotopes, htgr_activities = read_vertical_data(
+    htgr_base_path + 'SNF_by_nuclide/radioactivity/HTGR_FCM_activity.csv')
 
-# %% Plot fissile concentrations by nuclide.
+# Process PWR data
+pwr_days_header, pwr_days, pwr_days_data = read_horizontal_data(pwr_base_path + 'summary/out_Ref_PWR_time_dep.csv')
+pwr_time_points, pwr_isotopes, pwr_activities = read_vertical_data(
+    pwr_base_path + 'SNF_by_nuclide/radioactivity/Ref_PWR_activity.csv')
 
-# TODO: This will be essentially the same as the previous plot, but with different data for concentrations.
-#  The same parsing functions can be used.
+# Create plots with different thresholds and y-axis limits for each reactor type
+htgr_split_timestep = 3850
+pwr_split_timestep = 1250
+
+# Example y-axis limits (adjust these as needed)
+htgr_early_ylim = (1e0, 1e13)
+htgr_late_ylim = (1e0, 1e12)
+pwr_early_ylim = (1e7, 1e13)
+pwr_late_ylim = (1e0, 1e12)
+
+create_activity_plots(htgr_days, htgr_activities, htgr_isotopes,
+                      htgr_split_timestep, output_path + 'htgr_activity_plot', 'HTGR FCM',
+                      early_ylim=htgr_early_ylim, late_ylim=htgr_late_ylim)
+create_activity_plots(pwr_days, pwr_activities, pwr_isotopes,
+                      pwr_split_timestep, output_path + 'pwr_activity_plot', 'Reference PWR',
+                      early_ylim=pwr_early_ylim, late_ylim=pwr_late_ylim)
