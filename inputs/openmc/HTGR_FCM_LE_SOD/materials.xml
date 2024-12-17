@@ -2,8 +2,8 @@
   <cross_sections>/Users/krishnasunder/Desktop/workspace/R2R4SNF/inputs/openmc/nuclear_data/endfb71_hdf5/cross_sections.xml</cross_sections>
   <material depletable="true" id="1" name="kernel" temperature="900" volume="679.8543742278844">
     <density units="g/cm3" value="14.3" />
-    <nuclide ao="0.1975" name="U235" />
-    <nuclide ao="0.8025" name="U238" />
+    <nuclide ao="0.15" name="U235" />
+    <nuclide ao="0.85" name="U238" />
     <nuclide ao="0.99" name="N15" />
     <nuclide ao="0.01" name="N14" />
   </material>

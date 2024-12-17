@@ -31,8 +31,8 @@ ratio_pf=new_fuelpf/fuelpf
 
 kernel = openmc.Material(name='kernel') # UN fuel
 kernel.set_density('g/cm3', 14.3)
-kernel.add_nuclide('U235', 0.1975)
-kernel.add_nuclide('U238', 0.8025)
+kernel.add_nuclide('U235', 0.15)
+kernel.add_nuclide('U238', 0.85)
 kernel.add_nuclide('N15', 0.99)
 kernel.add_nuclide('N14', 0.01)
 kernel.temperature = fueltemp
@@ -95,8 +95,8 @@ block_graphite.temperature = modtemp
 
 
 coolant = openmc.Material(name='coolant')
-coolant.set_density('g/cm3', rho) #0.01046)
-coolant.add_nuclide('He4', 1.0)
+coolant.set_density('g/cm3', 0.02502)
+coolant.add_nuclide('Na23', 1.0)
 coolant.temperature = cooltemp
 
 reflector_graphite = openmc.Material(name='reflector_graphite')
@@ -430,7 +430,7 @@ power=power+cooling
 print("Running time: "+str(N_days) + ' nombre de jours simulations '+str (sum(time_operation)))
 
 integrator = openmc.deplete.CECMIntegrator(operator, time_steps, power, timestep_units='d')
-openmc.run()
+openmc.run(threads=12)
 print("operator.heavy_metal : " + str(operator.heavy_metal))
 
 
