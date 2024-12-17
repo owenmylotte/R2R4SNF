@@ -392,7 +392,7 @@ kernel.volume = volkernel
 Modelicius = openmc.model.Model(geometry=geom, materials=mats, settings=settings)
 Modelicius.export_to_xml()
 
-chain_file = '/home/chloec/Sources/chain_endfb71_pwr.xml'
+chain_file = 'chain_endfb71_pwr.xml'
 
 operator = openmc.deplete.Operator(Modelicius, chain_file, diff_burnable_mats=False)
 
