@@ -1,7 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=casmo_variations
-#SBATCH --array=1000-1499%12  # Adjust the range according to the number of pin variations
-#SBATCH --output=pset6_%a.out
+#SBATCH --job-name=htgr_fcm_le_nosod
+#SBATCH --output=htgr_fcm_le_nosod.out
 #SBATCH --nice=19  # Set a high niceness value
 #SBATCH --nodes=1  # Request one node
 #SBATCH --exclusive=user  # Ensure exclusive use of the node
