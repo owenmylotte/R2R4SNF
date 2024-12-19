@@ -3,6 +3,12 @@ import numpy as np
 from scipy import integrate
 import os
 
+# Set up LaTeX fonts
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "serif",
+    "font.serif": ["Computer Modern Roman"],
+})
 
 def read_horizontal_data(filename):
     """
@@ -68,11 +74,11 @@ def create_activity_plots(days, activities, isotopes, split_timestep, output_pre
     Creates early and late time plots for a given reactor's data with updated styling and larger fonts
     """
     # Set the style to match the slide
-    plt.style.use('default')
+    # plt.style.use('default')
 
     # Custom styling
-    background_color = '#d0cccc'
-    grid_color = '#FFFFFF'
+    background_color = '#FFFFFF'
+    grid_color = '#333333'
     text_color = '#333333'
 
     # Font sizes
@@ -113,7 +119,7 @@ def create_activity_plots(days, activities, isotopes, split_timestep, output_pre
         ax.yaxis.label.set_size(LABEL_SIZE)
 
     # Create early-time plot
-    fig, ax = plt.subplots(figsize=(12, 10))
+    fig, ax = plt.subplots(figsize=(12, 7))
 
     # Plot lines
     for idx in top_late:
@@ -128,8 +134,8 @@ def create_activity_plots(days, activities, isotopes, split_timestep, output_pre
 
     ax.set_xlabel('Time (days)', fontsize=LABEL_SIZE)
     ax.set_ylabel('Activity', fontsize=LABEL_SIZE)
-    ax.set_title(f'{reactor_name} In Core Activity\nTop 10 Time Integrated Contributors',
-                 color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
+    # ax.set_title(f'{reactor_name} In Core Activity\nTop 10 Time Integrated Contributors',
+    #              color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
 
     ax.set_xscale('log')
     ax.set_yscale('log')
@@ -149,7 +155,7 @@ def create_activity_plots(days, activities, isotopes, split_timestep, output_pre
     plt.close()
 
     # Create late-time plot
-    fig, ax = plt.subplots(figsize=(12, 10))
+    fig, ax = plt.subplots(figsize=(12, 7))
 
     for idx in top_late:
         isotope_activities = activities[idx, split_index:]
@@ -162,8 +168,8 @@ def create_activity_plots(days, activities, isotopes, split_timestep, output_pre
 
     ax.set_xlabel('Time (days)', fontsize=LABEL_SIZE)
     ax.set_ylabel('Activity', fontsize=LABEL_SIZE)
-    ax.set_title(f'{reactor_name} Spent Fuel Activity\nTop 10 Time Integrated Contributors',
-                 color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
+    # ax.set_title(f'{reactor_name} Spent Fuel Activity\nTop 10 Time Integrated Contributors',
+    #              color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
 
     ax.set_xscale('log')
     ax.set_yscale('log')
@@ -276,11 +282,11 @@ def create_fissile_inventory_plots(days, activities, isotopes, split_timestep, o
     Creates early and late time plots for fissile isotope inventories
     """
     # Set the style to match the previous plots
-    plt.style.use('default')
+    # plt.style.use('default')
 
     # Custom styling
-    background_color = '#d0cccc'
-    grid_color = '#FFFFFF'
+    background_color = '#FFFFFF'
+    grid_color = '#333333'
     text_color = '#333333'
 
     # Font sizes
@@ -339,7 +345,7 @@ def create_fissile_inventory_plots(days, activities, isotopes, split_timestep, o
         ax.yaxis.label.set_size(LABEL_SIZE)
 
     # Create early-time plot
-    fig, ax = plt.subplots(figsize=(12, 10))
+    fig, ax = plt.subplots(figsize=(12, 7))
 
     # Plot each top isotope
     for idx in top_early:
@@ -352,8 +358,8 @@ def create_fissile_inventory_plots(days, activities, isotopes, split_timestep, o
 
     ax.set_xlabel('Time (days)', fontsize=LABEL_SIZE)
     ax.set_ylabel('Normalized Inventory', fontsize=LABEL_SIZE)
-    ax.set_title(f'{reactor_name} In Core Fissile Inventory\nTop 10 Time Integrated Contributors',
-                 color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
+    # ax.set_title(f'{reactor_name} In Core Fissile Inventory\nTop 10 Time Integrated Contributors',
+    #              color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
 
     # ax.set_xscale('log')
     ax.set_yscale('log')
@@ -371,7 +377,7 @@ def create_fissile_inventory_plots(days, activities, isotopes, split_timestep, o
     plt.close()
 
     # Create late-time plot
-    fig, ax = plt.subplots(figsize=(12, 10))
+    fig, ax = plt.subplots(figsize=(12, 7))
 
     for idx in top_late:
         inventory = fissile_inventories[idx, split_index:]
@@ -382,8 +388,8 @@ def create_fissile_inventory_plots(days, activities, isotopes, split_timestep, o
 
     ax.set_xlabel('Time (days)', fontsize=LABEL_SIZE)
     ax.set_ylabel('Normalized Inventory', fontsize=LABEL_SIZE)
-    ax.set_title(f'{reactor_name} Spent Fuel Fissile Inventory\nTop 10 Time Integrated Contributors',
-                 color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
+    # ax.set_title(f'{reactor_name} Spent Fuel Fissile Inventory\nTop 10 Time Integrated Contributors',
+    #              color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
 
     # ax.set_xscale('log')
     ax.set_yscale('log')
@@ -403,7 +409,7 @@ def create_fissile_inventory_plots(days, activities, isotopes, split_timestep, o
 
 # Define paths for both reactor types
 htgr_base_path = "../../Results/HTGR_FCM/reactor_simulation/"
-pwr_base_path = "/home/owen/CLionProjects/R2R4SNF/Results/Ref_PWR/reactor_simulation/"
+pwr_base_path = "/Users/owen/PycharmProjects/R2R4SNF/Results/Ref_PWR/reactor_simulation/"
 output_path = "../output/"
 
 # Create output directory if it doesn't exist
