@@ -27,7 +27,7 @@ ratio_pf=new_fuelpf/fuelpf
 # Material
 
 # Path to the cross section file
-#openmc.Materials.cross_sections='/home/shared/endfb80_hdf5/cross_sections.xml'
+openmc.Materials.cross_sections='/Users/owen/PycharmProjects/R2R4SNF/inputs/openmc/nuclear_data/endfb71_hdf5/cross_sections.xml'
 
 kernel = openmc.Material(name='kernel') # UN fuel
 kernel.set_density('g/cm3', 14.3)
@@ -39,37 +39,37 @@ kernel.temperature = fueltemp
 
 buff= openmc.Material(name='buffer')
 buff.set_density('g/cm3', 1.0)
-buff.add_element('C', 1.0)
+buff.add_nuclide('C0', 1.0)
 buff.add_s_alpha_beta('c_Graphite')
 buff.temperature = fueltemp
 
 iPyC = openmc.Material(name='iPyC')
 iPyC.set_density('g/cm3', 1.9)
-iPyC.add_element('C', 1.0)
+iPyC.add_nuclide('C0', 1.0)
 iPyC.add_s_alpha_beta('c_Graphite')
 iPyC.temperature = fueltemp
 
 SiC = openmc.Material(name='SiC')
 SiC.set_density('g/cm3', 3.2)
-SiC.add_element('C', 0.5)
+SiC.add_nuclide('C0', 0.5)
 SiC.add_element('Si', 0.5)
 SiC.temperature = fueltemp
 
 oPyC = openmc.Material(name='oPyC')
 oPyC.set_density('g/cm3', 1.9)
-oPyC.add_element('C', 1.0)
+oPyC.add_nuclide('C0', 1.0)
 oPyC.add_s_alpha_beta('c_Graphite')
 oPyC.temperature = fueltemp
 
 compact_matrix = openmc.Material(name='compact_matrix') # change the compact matrix to SiC
 compact_matrix.set_density('g/cm3', 3.2)
-compact_matrix.add_element('C', 0.5)
+compact_matrix.add_nuclide('C0', 0.5)
 compact_matrix.add_element('Si', 0.5)
 compact_matrix.temperature = fueltemp
 
 compact_graphite = openmc.Material(name='compact_graphite')
 compact_graphite.set_density('g/cm3', 1.6479575)
-compact_graphite.add_element('C',    0.999999540, percent_type='wo')
+compact_graphite.add_nuclide('C0',    0.999999540, percent_type='wo')
 compact_graphite.add_nuclide('B10',  0.000000150, percent_type='wo')
 compact_graphite.add_nuclide('Si28', 0.000000100, percent_type='wo')
 compact_graphite.add_nuclide('Ca40', 0.000000080, percent_type='wo')
@@ -82,7 +82,7 @@ compact_graphite.temperature = fueltemp
 
 block_graphite = openmc.Material(name='block_graphite')
 block_graphite.set_density('g/cm3', 1.85)
-block_graphite.add_element('C',    0.999999540, percent_type='wo')
+block_graphite.add_nuclide('C0',    0.999999540, percent_type='wo')
 block_graphite.add_nuclide('B10',  0.000000150, percent_type='wo')
 block_graphite.add_nuclide('Si28', 0.000000100, percent_type='wo')
 block_graphite.add_nuclide('Ca40', 0.000000080, percent_type='wo')
@@ -101,7 +101,7 @@ coolant.temperature = cooltemp
 
 reflector_graphite = openmc.Material(name='reflector_graphite')
 reflector_graphite.set_density('g/cm3', 1.85)
-reflector_graphite.add_element('C',    0.999999540, percent_type='wo')
+reflector_graphite.add_nuclide('C0',    0.999999540, percent_type='wo')
 reflector_graphite.add_nuclide('B10',  0.000000150, percent_type='wo')
 reflector_graphite.add_nuclide('Si28', 0.000000100, percent_type='wo')
 reflector_graphite.add_nuclide('Ca40', 0.000000080, percent_type='wo')
@@ -114,7 +114,7 @@ reflector_graphite.temperature = refltemp
 
 permanent_graphite = openmc.Material(name='permanent_graphite')
 permanent_graphite.set_density('g/cm3', 1.85)
-permanent_graphite.add_element('C',    0.999999540, percent_type='wo')
+permanent_graphite.add_nuclide('C0',    0.999999540, percent_type='wo')
 permanent_graphite.add_nuclide('B10',  0.000000150, percent_type='wo')
 permanent_graphite.add_nuclide('Si28', 0.000000100, percent_type='wo')
 permanent_graphite.add_nuclide('Ca40', 0.000000080, percent_type='wo')
@@ -132,7 +132,7 @@ barrel.add_element('Cr', 21)
 barrel.add_element('Fe', 39.5)
 barrel.add_element('Al', 0.3)
 barrel.add_element('Ti', 0.3)
-barrel.add_element('C', 0.08)
+barrel.add_nuclide('C0', 0.08)
 barrel.temperature = bartemp
 
 
@@ -191,7 +191,7 @@ print(triso_radius)
 
 ########### Creating TRISO ##########
 
-triso_spheres = [openmc.model.ZCylinder(r=r) for r in triso_radius]
+triso_spheres = [openmc.model.Cylinder(r=r) for r in triso_radius]
 triso_z0 = openmc.ZPlane(z0=-1/2) # 2D simulation to simplify the design
 triso_z1 = openmc.ZPlane(z0=1/2)
 
@@ -232,17 +232,17 @@ fuel_block = openmc.model.hexagonal_prism(edge_length=20.6756,orientation='x')
 fuel_block_z0 = openmc.ZPlane(z0=-1/2)
 fuel_block_z1 = openmc.ZPlane(z0=1/2)
 
-small_coolant = openmc.model.ZCylinder(r=0.635)
+small_coolant = openmc.model.Cylinder(r=0.635)
 small_coolant_cells = [openmc.Cell(fill=coolant, region=-small_coolant),
                       openmc.Cell(fill=block_graphite, region=+small_coolant)]
 small_coolant_univ = openmc.Universe(cells=small_coolant_cells)
 
-large_coolant = openmc.model.ZCylinder(r=0.794)
+large_coolant = openmc.model.Cylinder(r=0.794)
 large_coolant_cells = [openmc.Cell(fill=coolant, region=-large_coolant),
                       openmc.Cell(fill=block_graphite, region=+large_coolant)]
 large_coolant_univ = openmc.Universe(cells=large_coolant_cells)
 
-hole = openmc.model.ZCylinder(r=0.635)
+hole = openmc.model.Cylinder(r=0.635)
 hole_cells = [openmc.Cell(fill=block_graphite, region=-hole),
              openmc.Cell(fill=block_graphite, region=+hole)]
 hole_univ = openmc.Universe(cells=hole_cells)
@@ -313,9 +313,9 @@ rad3 = rad2+(304.9-297.3) # radius of the reactor vessel
 core_z0 = openmc.ZPlane(z0=-0.5,boundary_type='reflective') 
 core_z1 = openmc.ZPlane(z0=0.5,boundary_type='reflective')
 
-core_c1 = openmc.ZCylinder(r=rad1)
-core_c2 = openmc.ZCylinder(r=rad2)
-core_c3=openmc.ZCylinder(r=rad3, boundary_type='vacuum' )
+core_c1 = openmc.Cylinder(r=rad1)
+core_c2 = openmc.Cylinder(r=rad2)
+core_c3=openmc.Cylinder(r=rad3, boundary_type='vacuum' )
 
 core1 = -core_c1 & +core_z0 & -core_z1
 core2 = +core_c1 & -core_c2 & +core_z0 & -core_z1
@@ -362,7 +362,7 @@ lower_left = np.array([-rad1, -rad1, -0.5])
 upper_right = np.array([rad1, rad1, 0.5])
 
 # The number of particles could be increased for a better accuracy 
-box = openmc.stats.Box(lower_left, upper_right, only_fissionable=True)
+box = openmc.stats.Box(lower_left, upper_right)
 src = openmc.Source(space=box)
 settings = openmc.Settings()
 settings.source = src
@@ -402,7 +402,7 @@ linear_power=power_density*(np.pi*(rad1**2)) #W/cm
 print('Linear power:' +str(linear_power))
 
 # Calculating time steps for burn-up of 60, 80, 1000 MWd/kgU
-BU_final=140 #MWd/kgU # can be modified for other burnup
+BU_final=80 #MWd/kgU # can be modified for other burnup
 N_days=(BU_final*operator.heavy_metal*1000)/linear_power
 end_step=N_days-3803
 
@@ -430,7 +430,7 @@ power=power+cooling
 print("Running time: "+str(N_days) + ' nombre de jours simulations '+str (sum(time_operation)))
 
 integrator = openmc.deplete.CECMIntegrator(operator, time_steps, power, timestep_units='d')
-openmc.run(threads=12)
+openmc.run(openmc_exec='/Users/owen/openmc/build/bin/openmc', threads=8, restart_file='statepoint.200.h5')
 print("operator.heavy_metal : " + str(operator.heavy_metal))
 
 
@@ -442,7 +442,7 @@ allcolors = {buff:'blue', iPyC:'yellow', SiC:'green', oPyC:'yellow', \
               coolant:'lightblue', permanent_graphite:'green', \
               barrel:'black', kernel:'red', reflector_graphite:'grey',}
 
-core_univ.plot(origin=(0.0, 0.0, 0.0), width=(250, 250), pixels=(1000,1000), basis='xy',color_by = 'material', colors=allcolors)
+core_univ.plot(origin=(0.0, 0.0, 0.0), width=(250, 250), pixels=(1000,1000), basis='xy',color_by = 'material', colors=allcolors, openmc_exec='/Users/owen/openmc/build/bin/openmc')
 
 o = openmc.Plot.from_geometry(geom)
 o.filename = 'core000'
@@ -467,13 +467,13 @@ w.colors = allcolors
 plot_file = openmc.Plots((o,w))
 
 plot_file.export_to_xml()
-openmc.plot_geometry()
+openmc.plot_geometry(openmc_exec='/Users/owen/openmc/build/bin/openmc')
 
 ##################################################################################################
 #                            DEPLETION
 ##################################################################################################
 
 start_time = time.time()
-#integrator.integrate()
+integrator.integrate()
 print("--- %s seconds ---" % (time.time() - start_time))
 
