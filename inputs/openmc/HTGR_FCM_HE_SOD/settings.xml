@@ -1,14 +1,12 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <settings>
   <run_mode>eigenvalue</run_mode>
-  <particles>5000</particles>
-  <batches>200</batches>
-  <inactive>20</inactive>
+  <particles>500</particles>
+  <batches>50</batches>
+  <inactive>10</inactive>
   <source particle="neutron" strength="1.0" type="independent">
     <space type="box">
-      <parameters>-110.0 -110.0 -0.5 110.0 110.0 0.5</parameters>
+      <parameters>-20.6756 -20.6756 -0.5 20.6756 20.6756 0.5</parameters>
     </space>
   </source>
-  <temperature_method>interpolation</temperature_method>
-  <temperature_range>293.15 923.15</temperature_range>
 </settings>
