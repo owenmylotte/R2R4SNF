@@ -67,25 +67,33 @@ def get_top_contributors(days, activities, isotopes, start_idx, end_idx, n_top=1
     top_indices = np.argsort(integrated_activities)[-n_top:]
     return top_indices[::-1]
 
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.cm import get_cmap, ScalarMappable
+from matplotlib.colors import to_rgba
 
 def create_activity_plots(days, activities, isotopes, split_timestep, output_prefix, reactor_name,
-                          early_ylim=None, late_ylim=None):
+                          early_ylim=None, late_ylim=None, colormap_name='gist_rainbow'):
     """
-    Creates early and late time plots for a given reactor's data with updated styling and larger fonts
+    Creates early and late time plots for a given reactor's data with highly distinguishable isotope colors.
     """
-    # Set the style to match the slide
-    # plt.style.use('default')
+    # Use a perceptually distinct and broad colormap
+    cmap = get_cmap(colormap_name)
+    num_isotopes = len(isotopes)
+    color_map = {isotope: cmap(i / max(num_isotopes - 1, 1)) for i, isotope in enumerate(isotopes)}
 
-    # Custom styling
-    background_color = '#FFFFFF'
-    grid_color = '#333333'
-    text_color = '#333333'
-
-    # Font sizes
-    TITLE_SIZE = 16
-    LABEL_SIZE = 14
-    TICK_SIZE = 12
-    LEGEND_SIZE = 12
+    def style_plot(fig, ax):
+        ax.set_facecolor('#FFFFFF')  # Background color
+        fig.patch.set_facecolor('#FFFFFF')
+        ax.grid(True, which="both", ls="-", alpha=0.2, color='#333333')
+        ax.set_axisbelow(True)
+        for spine in ax.spines.values():
+            spine.set_color('#CCCCCC')
+        ax.tick_params(colors='#333333', labelsize=12)
+        ax.xaxis.label.set_color('#333333')
+        ax.yaxis.label.set_color('#333333')
+        ax.xaxis.label.set_size(14)
+        ax.yaxis.label.set_size(14)
 
     # Find index corresponding to split_timestep
     split_index = np.searchsorted(days, split_timestep)
@@ -97,46 +105,22 @@ def create_activity_plots(days, activities, isotopes, split_timestep, output_pre
     # Calculate total activity at each time point
     total_activity = np.nansum(activities, axis=0)
 
-    def style_plot(fig, ax):
-        ax.set_facecolor(background_color)
-        fig.patch.set_facecolor(background_color)
-
-        # Grid styling
-        ax.grid(True, which="both", ls="-", alpha=0.2, color=grid_color)
-        ax.set_axisbelow(True)
-
-        # Border styling
-        for spine in ax.spines.values():
-            spine.set_color('#CCCCCC')
-
-        # Tick styling
-        ax.tick_params(colors=text_color, labelsize=TICK_SIZE)
-
-        # Label styling
-        ax.xaxis.label.set_color(text_color)
-        ax.yaxis.label.set_color(text_color)
-        ax.xaxis.label.set_size(LABEL_SIZE)
-        ax.yaxis.label.set_size(LABEL_SIZE)
-
     # Create early-time plot
     fig, ax = plt.subplots(figsize=(12, 7))
 
-    # Plot lines
-    for idx in top_late:
+    for idx in top_early:
         isotope_activities = activities[idx, :split_index]
         valid_indices = ~np.isnan(isotope_activities)
         if np.any(valid_indices):
-            ax.plot(days[:split_index], isotope_activities, label=isotopes[idx], linewidth=1.5)
+            ax.plot(days[:split_index], isotope_activities, label=isotopes[idx],
+                    linewidth=1.5, color=color_map[isotopes[idx]])
 
     # Plot total activity with black dashed line
-    ax.plot(days[:split_index], total_activity[:split_index],
-            label='Total Activity', linewidth=2.5, color='black', linestyle='--')
+    ax.plot(days[:split_index], total_activity[:split_index], label='Total Activity',
+            linewidth=2.5, color='black', linestyle='--')
 
-    ax.set_xlabel('Time (days)', fontsize=LABEL_SIZE)
-    ax.set_ylabel('Activity', fontsize=LABEL_SIZE)
-    # ax.set_title(f'{reactor_name} In Core Activity\nTop 10 Time Integrated Contributors',
-    #              color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
-
+    ax.set_xlabel('Time (days)', fontsize=14)
+    ax.set_ylabel('Activity', fontsize=14)
     ax.set_xscale('log')
     ax.set_yscale('log')
     if early_ylim:
@@ -144,14 +128,13 @@ def create_activity_plots(days, activities, isotopes, split_timestep, output_pre
 
     style_plot(fig, ax)
 
-    # Legend styling
-    leg = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left',
-                    borderaxespad=0., fontsize=LEGEND_SIZE, framealpha=1)
-    leg.get_frame().set_facecolor(background_color)
+    leg = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.,
+                    fontsize=12, framealpha=1)
+    leg.get_frame().set_facecolor('#FFFFFF')
 
     plt.tight_layout()
     plt.savefig(f'{output_prefix}_early.png', bbox_inches='tight', dpi=500,
-                facecolor=background_color, edgecolor='none')
+                facecolor='#FFFFFF', edgecolor='none')
     plt.close()
 
     # Create late-time plot
@@ -161,16 +144,14 @@ def create_activity_plots(days, activities, isotopes, split_timestep, output_pre
         isotope_activities = activities[idx, split_index:]
         valid_indices = ~np.isnan(isotope_activities)
         if np.any(valid_indices):
-            ax.plot(days[split_index:], isotope_activities, label=isotopes[idx], linewidth=1.5)
+            ax.plot(days[split_index:], isotope_activities, label=isotopes[idx],
+                    linewidth=1.5, color=color_map[isotopes[idx]])
 
-    ax.plot(days[split_index:], total_activity[split_index:],
-            label='Total Activity', linewidth=2.5, color='black', linestyle='--')
+    ax.plot(days[split_index:], total_activity[split_index:], label='Total Activity',
+            linewidth=2.5, color='black', linestyle='--')
 
-    ax.set_xlabel('Time (days)', fontsize=LABEL_SIZE)
-    ax.set_ylabel('Activity', fontsize=LABEL_SIZE)
-    # ax.set_title(f'{reactor_name} Spent Fuel Activity\nTop 10 Time Integrated Contributors',
-    #              color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
-
+    ax.set_xlabel('Time (days)', fontsize=14)
+    ax.set_ylabel('Activity', fontsize=14)
     ax.set_xscale('log')
     ax.set_yscale('log')
     if late_ylim:
@@ -178,14 +159,13 @@ def create_activity_plots(days, activities, isotopes, split_timestep, output_pre
 
     style_plot(fig, ax)
 
-    # Legend styling
-    leg = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left',
-                    borderaxespad=0., fontsize=LEGEND_SIZE, framealpha=1)
-    leg.get_frame().set_facecolor(background_color)
+    leg = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0.,
+                    fontsize=12, framealpha=1)
+    leg.get_frame().set_facecolor('#FFFFFF')
 
     plt.tight_layout()
     plt.savefig(f'{output_prefix}_late.png', bbox_inches='tight', dpi=500,
-                facecolor=background_color, edgecolor='none')
+                facecolor='#FFFFFF', edgecolor='none')
     plt.close()
 
 
@@ -276,134 +256,98 @@ def get_fissile_data():
 
     return decay_constants
 
-def create_fissile_inventory_plots(days, activities, isotopes, split_timestep, output_prefix, reactor_name,
-                                   early_ylim=None, late_ylim=None):
+
+def create_fissile_inventory_plot(days, inventories, isotopes, split_timestep, output_prefix, reactor_name,
+                                  colormap_name='Spectral', early_ylim=None):
     """
-    Creates early and late time plots for fissile isotope inventories
+    Creates a plot of fissile isotope inventories with perceptually distinct colors,
+    split into early and late timesteps.
+
+    Parameters:
+        days (array-like): Time points (in days).
+        inventories (2D array): Inventory data for each isotope (rows correspond to isotopes, columns to time points).
+        isotopes (list of str): Names of the isotopes.
+        split_timestep (int): Index at which to split early and late timesteps.
+        output_prefix (str): Prefix for the output file name.
+        reactor_name (str): Name of the reactor for the plot title.
+        colormap_name (str): Name of the matplotlib colormap to use for isotope colors.
+        early_ylim (tuple): Optional y-axis limits for the early timestep plot.
     """
-    # Set the style to match the previous plots
-    # plt.style.use('default')
+    # Use a perceptually distinct colormap
+    cmap = get_cmap(colormap_name)
+    num_isotopes = len(isotopes)
+    color_map = {isotope: cmap(i / max(num_isotopes - 1, 1)) for i, isotope in enumerate(isotopes)}
 
-    # Custom styling
-    background_color = '#FFFFFF'
-    grid_color = '#333333'
-    text_color = '#333333'
-
-    # Font sizes
-    TITLE_SIZE = 16
-    LABEL_SIZE = 14
-    TICK_SIZE = 12
-    LEGEND_SIZE = 12
-
-    # Get fissile isotopes and decay constants
-    fissile_data = get_fissile_data()
-
-    # Filter for fissile isotopes in our data
-    fissile_indices = []
-    fissile_lambdas = []
-    fissile_names = []
-    for i, isotope in enumerate(isotopes):
-        if isotope in fissile_data:
-            fissile_indices.append(i)
-            fissile_lambdas.append(fissile_data[isotope])
-            fissile_names.append(isotope)
-
-    # Convert activities to inventories using N = A/λ
-    fissile_inventories = np.zeros((len(fissile_indices), len(days)))
-    for idx, (i, lambda_i) in enumerate(zip(fissile_indices, fissile_lambdas)):
-        fissile_inventories[idx] = activities[i] / lambda_i
-
-    # Normalize by total initial inventory
-    initial_total = np.sum(fissile_inventories[:, 0])
-    fissile_inventories /= initial_total
-
-    # Find index corresponding to split_timestep
-    split_index = np.searchsorted(days, split_timestep)
-
-    # Get top 10 contributors based on time-integrated inventory
-    early_integrated = np.zeros(len(fissile_indices))
-    late_integrated = np.zeros(len(fissile_indices))
-
-    for i in range(len(fissile_indices)):
-        early_integrated[i] = integrate.simps(fissile_inventories[i, :split_index], days[:split_index])
-        late_integrated[i] = integrate.simps(fissile_inventories[i, split_index:], days[split_index:])
-
-    top_early = np.argsort(early_integrated)[-10:][::-1]
-    top_late = np.argsort(late_integrated)[-10:][::-1]
-
+    # Styling function for plot aesthetics
     def style_plot(fig, ax):
-        ax.set_facecolor(background_color)
-        fig.patch.set_facecolor(background_color)
-        ax.grid(True, which="both", ls="-", alpha=0.2, color=grid_color)
+        ax.set_facecolor('#FFFFFF')  # Background color
+        fig.patch.set_facecolor('#FFFFFF')
+        ax.grid(True, which="both", ls="-", alpha=0.2, color='#333333')
         ax.set_axisbelow(True)
         for spine in ax.spines.values():
             spine.set_color('#CCCCCC')
-        ax.tick_params(colors=text_color, labelsize=TICK_SIZE)
-        ax.xaxis.label.set_color(text_color)
-        ax.yaxis.label.set_color(text_color)
-        ax.xaxis.label.set_size(LABEL_SIZE)
-        ax.yaxis.label.set_size(LABEL_SIZE)
+        ax.tick_params(colors='#333333', labelsize=12)
+        ax.xaxis.label.set_color('#333333')
+        ax.yaxis.label.set_color('#333333')
+        ax.xaxis.label.set_size(14)
+        ax.yaxis.label.set_size(14)
 
-    # Create early-time plot
+    # Split the data into early and late timesteps
+    early_days = days[:split_timestep]
+    late_days = days[split_timestep:]
+    early_inventories = inventories[:, :split_timestep]
+    late_inventories = inventories[:, split_timestep:]
+
+    # Plot early timestep data
     fig, ax = plt.subplots(figsize=(12, 7))
+    for idx, isotope in enumerate(isotopes):
+        isotope_inventory = early_inventories[idx, :]
+        valid_indices = ~np.isnan(isotope_inventory)
+        if np.any(valid_indices):
+            ax.plot(early_days, isotope_inventory, label=isotope,
+                    linewidth=1.5, color=color_map[isotope])
 
-    # Plot each top isotope
-    for idx in top_early:
-        inventory = fissile_inventories[idx, :split_index]
-        ax.plot(days[:split_index], inventory, label=fissile_names[idx], linewidth=1.5)
+    total_early_inventory = np.nansum(early_inventories, axis=0)
+    ax.plot(early_days, total_early_inventory, label='Total Inventory',
+            linewidth=2.5, color='black', linestyle='--')
 
-    # Plot total inventory
-    total_inventory = np.sum(fissile_inventories[:, :split_index], axis=0)
-    ax.plot(days[:split_index], total_inventory, label='Total', linewidth=2.5, color='black', linestyle='--')
-
-    ax.set_xlabel('Time (days)', fontsize=LABEL_SIZE)
-    ax.set_ylabel('Normalized Inventory', fontsize=LABEL_SIZE)
-    # ax.set_title(f'{reactor_name} In Core Fissile Inventory\nTop 10 Time Integrated Contributors',
-    #              color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
-
-    # ax.set_xscale('log')
+    ax.set_xlabel('Time (days)', fontsize=14)
+    ax.set_ylabel('Inventory (kg)', fontsize=14)
+    ax.set_xscale('log')
     ax.set_yscale('log')
     if early_ylim:
         ax.set_ylim(early_ylim)
-
+    ax.set_title(f'{reactor_name} Fissile Inventory (Early Time)', fontsize=16, color='#333333')
     style_plot(fig, ax)
-    leg = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left',
-                    borderaxespad=0., fontsize=LEGEND_SIZE, framealpha=1)
-    leg.get_frame().set_facecolor(background_color)
-
+    leg = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=12, framealpha=1)
+    leg.get_frame().set_facecolor('#FFFFFF')
     plt.tight_layout()
-    plt.savefig(f'{output_prefix}_early.png', bbox_inches='tight', dpi=500,
-                facecolor=background_color, edgecolor='none')
+    plt.savefig(f'{output_prefix}_early.png', bbox_inches='tight', dpi=500, facecolor='#FFFFFF', edgecolor='none')
     plt.close()
 
-    # Create late-time plot
+    # Plot late timestep data
     fig, ax = plt.subplots(figsize=(12, 7))
+    for idx, isotope in enumerate(isotopes):
+        isotope_inventory = late_inventories[idx, :]
+        valid_indices = ~np.isnan(isotope_inventory)
+        if np.any(valid_indices):
+            ax.plot(late_days, isotope_inventory, label=isotope,
+                    linewidth=1.5, color=color_map[isotope])
 
-    for idx in top_late:
-        inventory = fissile_inventories[idx, split_index:]
-        ax.plot(days[split_index:], inventory, label=fissile_names[idx], linewidth=1.5)
+    total_late_inventory = np.nansum(late_inventories, axis=0)
+    ax.plot(late_days, total_late_inventory, label='Total Inventory',
+            linewidth=2.5, color='black', linestyle='--')
 
-    total_inventory = np.sum(fissile_inventories[:, split_index:], axis=0)
-    ax.plot(days[split_index:], total_inventory, label='Total', linewidth=2.5, color='black', linestyle='--')
-
-    ax.set_xlabel('Time (days)', fontsize=LABEL_SIZE)
-    ax.set_ylabel('Normalized Inventory', fontsize=LABEL_SIZE)
-    # ax.set_title(f'{reactor_name} Spent Fuel Fissile Inventory\nTop 10 Time Integrated Contributors',
-    #              color=text_color, pad=20, fontsize=TITLE_SIZE, fontweight='bold')
-
-    # ax.set_xscale('log')
+    ax.set_xlabel('Time (days)', fontsize=14)
+    ax.set_ylabel('Inventory (kg)', fontsize=14)
+    ax.set_xscale('log')
     ax.set_yscale('log')
-    if late_ylim:
-        ax.set_ylim(late_ylim)
-
+    ax.set_title(f'{reactor_name} Fissile Inventory (Late Time)', fontsize=16, color='#333333')
     style_plot(fig, ax)
-    leg = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left',
-                    borderaxespad=0., fontsize=LEGEND_SIZE, framealpha=1)
-    leg.get_frame().set_facecolor(background_color)
-
+    leg = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', borderaxespad=0., fontsize=12, framealpha=1)
+    leg.get_frame().set_facecolor('#FFFFFF')
     plt.tight_layout()
-    plt.savefig(f'{output_prefix}_late.png', bbox_inches='tight', dpi=500,
-                facecolor=background_color, edgecolor='none')
+    plt.savefig(f'{output_prefix}_late.png', bbox_inches='tight', dpi=500, facecolor='#FFFFFF', edgecolor='none')
     plt.close()
 
 
@@ -445,10 +389,10 @@ create_activity_plots(pwr_days, pwr_activities, pwr_isotopes,
                       pwr_split_timestep, output_path + 'pwr_activity_plot', 'Reference PWR',
                       early_ylim=pwr_early_ylim, late_ylim=pwr_late_ylim)
 
-create_fissile_inventory_plots(htgr_days, htgr_activities, htgr_isotopes, htgr_split_timestep,
+create_fissile_inventory_plot(htgr_days, htgr_activities, htgr_isotopes, htgr_split_timestep,
                                output_path + 'htgr_fissile_plot', 'HTGR FCM',
-                               early_ylim=fissile_ylim, late_ylim=None)
+                               early_ylim=fissile_ylim)
 
-create_fissile_inventory_plots(pwr_days, pwr_activities, pwr_isotopes, pwr_split_timestep,
+create_fissile_inventory_plot(pwr_days, pwr_activities, pwr_isotopes, pwr_split_timestep,
                                output_path + 'pwr_fissile_plot', 'Reference PWR',
-                               early_ylim=fissile_ylim, late_ylim=None)
+                               early_ylim=fissile_ylim)
